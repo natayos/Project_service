@@ -1,7 +1,8 @@
 import mysql.connector
 from flask import Blueprint, redirect, request, jsonify
-import pyrebase
+import requests
 import os
+import mysql
 from functools import wraps
 from .author import token_Author
 controller = Blueprint('controller', __name__)
@@ -13,8 +14,7 @@ db = mysql.connector.connect(
 
 @controller.route('/', methods=['GET'], endpoint="index")
 # @token_Author
-def index():
-    return "TEST"
+def index(): return "TEST"
 
 
 @controller.route('/projects', methods=['GET'], endpoint="get_projects")
@@ -33,8 +33,8 @@ def get_projects(data):
     except Exception as error:
         return jsonify(error), 400
     finally:
-        cursor.close();
-        db.close();
+        cursor.close()
+        db.close()
 
 
 @controller.route('/create/project', methods=['POST'], endpoint="create_project")
@@ -199,15 +199,15 @@ def stopActive_project(data):
 @token_Author
 def delete_project(data, project_id: int, emp_id: str):
     """"""
-    db.connect();
-    cursor = db.cursor(dictionary=True);
-    print(project_id, emp_id);
+    db.connect()
+    cursor = db.cursor(dictionary=True)
+    print(project_id, emp_id)
     try:
         sql = "DELETE Members where emp_id = {0} and project_id = {1}".format(
             "'"+emp_id+"'",
             project_id
-        );
-        cursor.execute(sql);
+        )
+        cursor.execute(sql)
         return {
             "status": True,
             "message": "Delete emp_id = {0} from project_id = {1} Successfuly !".format(emp_id, project_id)
@@ -220,5 +220,39 @@ def delete_project(data, project_id: int, emp_id: str):
             "error": jsonify(error)
         }, 409
     finally:
+        cursor.close()
+        db.close()
+
+@controller.route('/getAll/member/<project_id>', methods=['GET'], endpoint="get_all_member")
+def get_all_member(project_id: int):
+    """"""
+    db.connect();
+    cursor = db.cursor(dictionary=True);
+    try:
+        sql_fetch_member = "SELECT emp_id FROM TestMembers WHERE project_id = {0}".format(project_id);
+        cursor.execute(sql_fetch_member);
+        member = cursor.fetchall();
+        # print("MEMBER in PROJECT => ",member, "\n");
+        all_user = requests.get('http://localhost:8080/user/getAllUser').json();
+        
+        reply = [];
+        for item in member:
+            for user in all_user:
+                if (user['_id'] == item['emp_id']):
+                    obj = {
+                        "emp_id": user['_id'],
+                        "firstName": user['fname'],
+                        "last_name": user['lname']
+                    }
+                    reply.append(obj);
+        return reply, 200;
+        
+    except Exception as error:
+        print(error);
+        return {
+            "error": error
+        }
+    finally:
         cursor.close();
         db.close();
+    
