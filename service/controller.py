@@ -36,6 +36,7 @@ def get_projects(data):
                 if (project['project_chief'] == user['_id']):
                     obj = {
                         "project_name": project['project_name'],
+                        "project_id": project['project_id'],
                         "sup_name": user['fname'] + " "+user['lname'],
                         "project_status": project['project_status'],
                         "due_date_project": project['due_date_project'],
