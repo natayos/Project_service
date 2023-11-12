@@ -11,7 +11,6 @@ db = mysql.connector.connect(
     host="project-service.ctyetg9uawza.ap-southeast-2.rds.amazonaws.com", user="root", password="ikfIjN-23412ddasd+3d", db="project_service"
 )
 
-
 @controller.route('/', methods=['GET'], endpoint="index")
 # @token_Author
 def index(): return "TEST"
@@ -26,7 +25,7 @@ def get_projects(data):
     db.connect();
     cursor = db.cursor(dictionary=True)
     try:
-        sql = "SELECT * from Project_info;"
+        sql = "SELECT * from Project_info WHERE isActive = 'YES';"
         cursor.execute(sql)
         reply = cursor.fetchall()  # Get data from db => [{}....]
         return reply, 200
@@ -72,7 +71,7 @@ def create_project(data):
         for id in members:
             print(index, id)
             cursor.execute(
-                "INSERT INTO TestMembers(emp_id, project_id) VALUES({0}, {1})".format(
+                "INSERT INTO Members(emp_id, project_id) VALUES({0}, {1})".format(
                     "'"+id+"'",
                     current_project_id
                 )
@@ -144,11 +143,12 @@ def edit_project(data):
     # db.start_transaction();
     try:
         req = request.form.to_dict()
-        sql = "UPDATE Project_info set project_name = {0}, project_chief = {1}, project_status = {2}, due_date_project ={3}".format(
+        sql = "UPDATE Project_info set project_name = {0}, project_chief = {1}, project_status = {2}, due_date_project ={3} WHERE project_id = {4}".format(
             req['project_name'],
             req['project_chief'],
             req['project_status'],
-            req['due_date_project']
+            req['due_date_project'],
+            req['project_id']
         )
         cursor.execute(sql)
         return {
@@ -167,27 +167,25 @@ def edit_project(data):
         db.close()
 
 
-@controller.route('/stop/project', methods=['PUT'], endpoint="stopActive_project")
+@controller.route('/stop/project/<project_id>', methods=['PUT'], endpoint="stopActive_project")
 @token_Author
-def stopActive_project(data):
+def stopActive_project(data, project_id: int):
     """"""
     db.connect()
     cursor = db.cursor(dictionary=True)
     try:
-        req = request.form.to_dict()
-
         sql = "UPDATE Project_info set isActive ='NO' where project_id = {0}".format(
-            req['project_id'])
+            project_id)
         cursor.execute(sql)
         return {
             "status": True,
-            "message": "Project_id => {0} update isActive to 'NO' !".format(req['project_id'])
+            "message": "Project_id => {0} update isActive to 'NO' !".format(project_id)
         }, 200
     except Exception as error:
         print(error)
         return {
             "status": False,
-            "message": "Project_id => {0} update fail !".format(req['project_id']),
+            "message": "Project_id => {0} update fail !".format(project_id),
             "error": jsonify(error)
         }, 409
     finally:
@@ -229,7 +227,7 @@ def get_all_member(project_id: int):
     db.connect();
     cursor = db.cursor(dictionary=True);
     try:
-        sql_fetch_member = "SELECT emp_id FROM TestMembers WHERE project_id = {0}".format(project_id);
+        sql_fetch_member = "SELECT emp_id FROM Members WHERE project_id = {0}".format(project_id);
         cursor.execute(sql_fetch_member);
         member = cursor.fetchall();
         # print("MEMBER in PROJECT => ",member, "\n");
