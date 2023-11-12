@@ -2,7 +2,6 @@ import mysql.connector
 from flask import Blueprint, redirect, request, jsonify
 import requests
 import os;
-import threading;
 import mysql
 from functools import wraps
 from .author import token_Author

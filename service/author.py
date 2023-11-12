@@ -1,5 +1,4 @@
 import os, json;
-import pyrebase;
 import jwt;
 from flask import jsonify, request, abort;
 from functools import wraps;
