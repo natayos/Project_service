@@ -1,11 +1,12 @@
 import mysql.connector
 from flask import Blueprint, redirect, request, jsonify
 import requests
-import os
+import os;
+import threading;
 import mysql
 from functools import wraps
 from .author import token_Author
-controller = Blueprint('controller', __name__)
+controller = Blueprint('controller', __name__);
 
 db = mysql.connector.connect(
     host="project-service.ctyetg9uawza.ap-southeast-2.rds.amazonaws.com", user="root", password="ikfIjN-23412ddasd+3d", db="project_service"
@@ -23,12 +24,26 @@ def get_projects(data):
         return ArrayList of Project's data 
     """
     db.connect();
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor(dictionary=True);
     try:
-        sql = "SELECT * from Project_info WHERE isActive = 'YES';"
-        cursor.execute(sql)
-        reply = cursor.fetchall()  # Get data from db => [{}....]
-        return reply, 200
+        all_user = requests.get('http://localhost:8080/user/getAllUser').json();
+        sql = "SELECT * from Project_info WHERE isActive = 'YES';";
+        cursor.execute(sql);
+        reply = cursor.fetchall();  # Get data from db => [{}....]
+        reply_list = [];
+        for project in reply:
+            for user in all_user:
+                if (project['project_chief'] == user['_id']):
+                    obj = {
+                        "project_name": project['project_name'],
+                        "sup_name": user['fname'] + " "+user['lname'],
+                        "project_status": project['project_status'],
+                        "due_date_project": project['due_date_project'],
+                        "project_chief": project['project_chief']
+                    };
+                    reply_list.append(obj);
+        
+        return reply_list, 200
     except Exception as error:
         return jsonify(error), 400
     finally:
@@ -232,7 +247,6 @@ def get_all_member(project_id: int):
         member = cursor.fetchall();
         # print("MEMBER in PROJECT => ",member, "\n");
         all_user = requests.get('http://localhost:8080/user/getAllUser').json();
-        
         reply = [];
         for item in member:
             for user in all_user:
